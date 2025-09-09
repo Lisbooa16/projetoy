@@ -1,9 +1,9 @@
 from django.contrib.auth.models import Group, Permission
+from django.contrib.contenttypes.models import ContentType
 from django.db.models.signals import post_migrate
 from django.dispatch import receiver
-from django.contrib.contenttypes.models import ContentType
-from .models import User
 
+from .models import User
 
 DEFAULT_GROUPS = {
     "Administrators": {
@@ -28,8 +28,12 @@ def create_default_groups(sender, **kwargs):
         return
 
     user_ct = ContentType.objects.get_for_model(User)
-    perms_by_codename = {p.codename: p for p in Permission.objects.filter(content_type=user_ct)}
+    perms_by_codename = {
+        p.codename: p for p in Permission.objects.filter(content_type=user_ct)
+    }
     for group_name, cfg in DEFAULT_GROUPS.items():
         group, _ = Group.objects.get_or_create(name=group_name)
-        group.permissions.set([perms_by_codename[c] for c in cfg["permissions"] if c in perms_by_codename])
+        group.permissions.set(
+            [perms_by_codename[c] for c in cfg["permissions"] if c in perms_by_codename]
+        )
         group.save()

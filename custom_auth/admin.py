@@ -1,8 +1,9 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils.translation import gettext_lazy as _
+
+from .forms import UserChangeForm, UserCreationForm
 from .models import User
-from .forms import UserCreationForm, UserChangeForm
 
 
 @admin.register(User)
@@ -17,14 +18,47 @@ class UserAdmin(DjangoUserAdmin):
 
     fieldsets = (
         (None, {"fields": ("username", "password")}),
-        (_("Personal info"), {"fields": ("display_name", "first_name", "last_name", "email", "public_id")}),
-        (_("Permissions"), {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
+        (
+            _("Personal info"),
+            {
+                "fields": (
+                    "display_name",
+                    "first_name",
+                    "last_name",
+                    "email",
+                    "public_id",
+                )
+            },
+        ),
+        (
+            _("Permissions"),
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                    "groups",
+                    "user_permissions",
+                )
+            },
+        ),
         (_("Important dates"), {"fields": ("last_login", "date_joined")}),
     )
     readonly_fields = ("public_id",)
     add_fieldsets = (
-        (None, {
-            "classes": ("wide",),
-            "fields": ("username", "email", "display_name", "password1", "password2", "is_staff", "is_active"),
-        }),
+        (
+            None,
+            {
+                "classes": ("wide",),
+                "fields": (
+                    "username",
+                    "email",
+                    "display_name",
+                    "password1",
+                    "password2",
+                    "is_staff",
+                    "is_active",
+                ),
+            },
+        ),
     )

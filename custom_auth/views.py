@@ -1,27 +1,27 @@
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
-from rest_framework import viewsets, mixins, permissions, decorators, response, status
-from .serializers import UserSerializer, UserCreateSerializer, GroupSerializer
-from .permissions import IsSelfOrAdmin, IsReadOnlyOrAdmin
-
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-from django.utils.encoding import force_bytes, force_str
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.mail import send_mail
-
-from rest_framework import viewsets, permissions, decorators, response, status
-from rest_framework.views import APIView
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from rest_framework import decorators, mixins, permissions, response, status, viewsets
 from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.views import APIView
 
+from .permissions import IsReadOnlyOrAdmin, IsSelfOrAdmin
 from .serializers import (
-    UserSerializer, UserCreateSerializer, GroupSerializer,
-    ChangePasswordSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer
+    ChangePasswordSerializer,
+    GroupSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
+    UserCreateSerializer,
+    UserSerializer,
 )
 
 User = get_user_model()
+token_generator = PasswordResetTokenGenerator()
+
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all().order_by("id")
@@ -45,22 +45,29 @@ class UserViewSet(viewsets.ModelViewSet):
             return UserCreateSerializer
         return UserSerializer
 
-    @decorators.action(detail=False, methods=["get"], permission_classes=[permissions.IsAuthenticated])
+    @decorators.action(
+        detail=False, methods=["get"], permission_classes=[permissions.IsAuthenticated]
+    )
     def me(self, request):
         """Retorna os dados do usuário autenticado"""
         ser = UserSerializer(request.user)
         return response.Response(ser.data)
-    
+
     @decorators.action(
-        detail=False, methods=["post"], url_path="me/change_password",
-        permission_classes=[permissions.IsAuthenticated]
+        detail=False,
+        methods=["post"],
+        url_path="me/change_password",
+        permission_classes=[permissions.IsAuthenticated],
     )
     def change_password(self, request):
         ser = ChangePasswordSerializer(data=request.data, context={"request": request})
         ser.is_valid(raise_exception=True)
         request.user.set_password(ser.validated_data["new_password"])
         request.user.save(update_fields=["password"])
-        return response.Response({"detail": "Senha alterada com sucesso."}, status=status.HTTP_200_OK)
+        return response.Response(
+            {"detail": "Senha alterada com sucesso."}, status=status.HTTP_200_OK
+        )
+
 
 class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all().order_by("name")
@@ -77,13 +84,17 @@ class PasswordResetRequestView(APIView):
         ser = PasswordResetRequestSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         email = ser.validated_data["email"].lower().strip()
-        redirect_url = ser.validated_data.get("redirect_url") or getattr(settings, "SITE_URL", "")
+        redirect_url = ser.validated_data.get("redirect_url") or getattr(
+            settings, "SITE_URL", ""
+        )
 
         try:
             user = User.objects.get(email__iexact=email, is_active=True)
         except User.DoesNotExist:
             # Resposta genérica para não vazar existência de conta
-            return response.Response({"detail": "Se o e-mail existir, você receberá as instruções."})
+            return response.Response(
+                {"detail": "Se o e-mail existir, você receberá as instruções."}
+            )
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = token_generator.make_token(user)
@@ -93,9 +104,13 @@ class PasswordResetRequestView(APIView):
 
         subject = "Redefinição de senha"
         message = f"Olá,\n\nPara redefinir sua senha, acesse: {link}\n\nSe você não solicitou, ignore este e-mail."
-        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
+        send_mail(
+            subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False
+        )
 
-        return response.Response({"detail": "Se o e-mail existir, você receberá as instruções."})
+        return response.Response(
+            {"detail": "Se o e-mail existir, você receberá as instruções."}
+        )
 
 
 class PasswordResetConfirmView(APIView):
@@ -112,11 +127,18 @@ class PasswordResetConfirmView(APIView):
             user_id = force_str(urlsafe_base64_decode(uid))
             user = User.objects.get(pk=user_id, is_active=True)
         except Exception:
-            return response.Response({"detail": "Link inválido."}, status=status.HTTP_400_BAD_REQUEST)
+            return response.Response(
+                {"detail": "Link inválido."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         if not token_generator.check_token(user, token):
-            return response.Response({"detail": "Token inválido ou expirado."}, status=status.HTTP_400_BAD_REQUEST)
+            return response.Response(
+                {"detail": "Token inválido ou expirado."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         user.set_password(new_password)
         user.save(update_fields=["password"])
-        return response.Response({"detail": "Senha redefinida com sucesso."}, status=status.HTTP_200_OK)
+        return response.Response(
+            {"detail": "Senha redefinida com sucesso."}, status=status.HTTP_200_OK
+        )

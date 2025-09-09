@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -13,6 +14,7 @@ class User(AbstractUser):
     - E-mail único (opcional, mas comum)
     - UUID público para expor em APIs
     """
+
     id = models.BigAutoField(primary_key=True)
     public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     email = models.EmailField(_("email address"), unique=True)

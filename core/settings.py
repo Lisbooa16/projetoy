@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -37,13 +38,13 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "custom_auth"
+    "custom_auth",
 ]
 
 AUTH_USER_MODEL = "custom_auth.User"
 
 LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "dashboard"    # ajuste pro seu fluxo
+LOGIN_REDIRECT_URL = "dashboard"  # ajuste pro seu fluxo
 LOGOUT_REDIRECT_URL = "login"
 
 
@@ -95,15 +96,17 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 20,
 }
 
-REST_FRAMEWORK.update({
-    "DEFAULT_THROTTLE_CLASSES": [
-        "rest_framework.throttling.ScopedRateThrottle",
-    ],
-    "DEFAULT_THROTTLE_RATES": {
-        "auth_token": "5/min",         # POST /api/auth/token/
-        "password_reset": "5/hour",    # POST /api/auth/password/reset/
-    },
-})
+REST_FRAMEWORK.update(
+    {
+        "DEFAULT_THROTTLE_CLASSES": [
+            "rest_framework.throttling.ScopedRateThrottle",
+        ],
+        "DEFAULT_THROTTLE_RATES": {
+            "auth_token": "5/min",  # POST /api/auth/token/
+            "password_reset": "5/hour",  # POST /api/auth/password/reset/
+        },
+    }
+)
 
 # E-mail (dev: imprime no console)
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
@@ -112,7 +115,7 @@ DEFAULT_FROM_EMAIL = "no-reply@seu-dominio.com"
 # Opcional: URL base do seu front pra montar link do reset (pode vir no payload também)
 SITE_URL = "http://localhost:3000"
 
-from datetime import timedelta
+
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
