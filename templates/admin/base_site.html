@@ -1,0 +1,38 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{# O django-admin-interface já aplicou o tema “Active”.
+   Aqui, por usuário, sobrescrevemos com as variáveis do User.admin_theme. #}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <style>
+    :root {
+      {% for k, v in theme_vars.items %}
+        {% if v %} {{ k }}: {{ v }}; {% endif %}
+      {% endfor %}
+    }
+
+    /* mapeia as variáveis pros elementos do admin */
+    body, .dashboard #content {
+      background: var(--color-bg, inherit);
+      color: var(--color-text, inherit);
+    }
+    a, .breadcrumbs a, .object-tools a {
+      color: var(--primary, var(--link, inherit));
+    }
+    .module, .card, .submit-row, .module.aligned {
+      background: var(--surface, inherit);
+    }
+    .help, .quiet, .muted, .hint {
+      color: var(--muted, inherit);
+    }
+    #header, .breadcrumbs {
+      background: var(--header-bg, inherit);
+      color: var(--header-text, inherit);
+    }
+    #header a:link, #header a:visited {
+      color: var(--header-text, inherit);
+    }
+  </style>
+{% endblock %}

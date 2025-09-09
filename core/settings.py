@@ -32,6 +32,8 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "admin_interface",
+    "colorfield",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -110,7 +112,15 @@ REST_FRAMEWORK.update(
 
 # E-mail (dev: imprime no console)
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-DEFAULT_FROM_EMAIL = "no-reply@seu-dominio.com"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_SSL = True
+EMAIL_USE_TLS = False
+
+EMAIL_HOST_USER = "guibrbr161@gmail.com"  # seu gmail
+EMAIL_HOST_PASSWORD = "yzxtrmhftdhyhif"  # vou explicar abaixo
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
 
 # Opcional: URL base do seu front pra montar link do reset (pode vir no payload também)
 SITE_URL = "http://localhost:3000"
@@ -191,3 +201,14 @@ STATIC_URL = "/static/"
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+# Onde os arquivos coletados vão ficar
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Se quiser ter pastas adicionais de estáticos no projeto:
+STATICFILES_DIRS = [
+    BASE_DIR / "static",  # opcional
+]
+
+TEMPLATES[0]["OPTIONS"]["context_processors"] += [
+    "custom_auth.context_processors.theme",
+]
