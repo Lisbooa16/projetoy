@@ -1,5 +1,7 @@
 from django.db import models
-from products.models.models_utils import BaseModel  
+
+from products.models.models_utils import BaseModel
+
 
 class Categoria(BaseModel):
     nome = models.CharField(max_length=100, unique=True)
@@ -7,7 +9,7 @@ class Categoria(BaseModel):
 
     def __str__(self):
         return self.nome
-    
+
     class Meta:
         verbose_name = "Categoria"
         verbose_name_plural = "Categorias"
@@ -17,17 +19,20 @@ class Categoria(BaseModel):
         ]
         get_latest_by = "created_at"
 
+
 class Produto(BaseModel):
     nome = models.CharField(max_length=255)
     descricao = models.TextField(blank=True, null=True)
     preco = models.DecimalField(max_digits=10, decimal_places=2)
     estoque = models.PositiveIntegerField(default=0)
     codigo_barras = models.CharField(max_length=100, unique=True, blank=True, null=True)
-    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE, related_name="produtos")
+    categoria = models.ForeignKey(
+        Categoria, on_delete=models.CASCADE, related_name="produtos"
+    )
 
     def __str__(self):
         return self.nome
-    
+
     class Meta:
         verbose_name = "Produto"
         verbose_name_plural = "Produtos"
@@ -36,6 +41,7 @@ class Produto(BaseModel):
             models.Index(fields=["nome"]),
         ]
         get_latest_by = "created_at"
+
 
 class Promocao(BaseModel):
     nome = models.CharField(max_length=100)
@@ -47,7 +53,7 @@ class Promocao(BaseModel):
 
     def __str__(self):
         return self.nome
-    
+
     class Meta:
         verbose_name = "Promoção"
         verbose_name_plural = "Promoções"

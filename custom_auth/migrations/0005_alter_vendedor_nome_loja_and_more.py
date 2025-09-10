@@ -5,19 +5,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('custom_auth', '0004_alter_user_theme_loja_user_lojas_vendedor'),
+        ("custom_auth", "0004_alter_user_theme_loja_user_lojas_vendedor"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='vendedor',
-            name='nome_loja',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='vendedores', to='custom_auth.loja'),
+            model_name="vendedor",
+            name="nome_loja",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="vendedores",
+                to="custom_auth.loja",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='loja',
-            constraint=models.UniqueConstraint(fields=('dono', 'nome'), name='uniq_loja_por_dono_nome'),
+            model_name="loja",
+            constraint=models.UniqueConstraint(
+                fields=("dono", "nome"), name="uniq_loja_por_dono_nome"
+            ),
         ),
     ]

@@ -1,2 +1,2 @@
-from .produtos import *  # noqa
 from .models_utils import *  # noqa
+from .produtos import *  # noqa

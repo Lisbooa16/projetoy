@@ -6,49 +6,80 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('custom_auth', '0003_user_admin_theme'),
+        ("custom_auth", "0003_user_admin_theme"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='user',
-            name='theme',
-            field=models.ForeignKey(blank=True, help_text='Tema do FRONT preferido deste usuário.', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='users', to='custom_auth.theme'),
+            model_name="user",
+            name="theme",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="Tema do FRONT preferido deste usuário.",
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="users",
+                to="custom_auth.theme",
+            ),
         ),
         migrations.CreateModel(
-            name='Loja',
+            name="Loja",
             fields=[
-                ('id', models.BigAutoField(primary_key=True, serialize=False)),
-                ('nome', models.CharField(max_length=255)),
-                ('descricao', models.TextField(blank=True, null=True)),
-                ('data_criacao', models.DateTimeField(auto_now_add=True)),
-                ('dono', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='lojas_proprietario', to=settings.AUTH_USER_MODEL)),
-                ('tema', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='lojas', to='custom_auth.theme')),
+                ("id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("nome", models.CharField(max_length=255)),
+                ("descricao", models.TextField(blank=True, null=True)),
+                ("data_criacao", models.DateTimeField(auto_now_add=True)),
+                (
+                    "dono",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="lojas_proprietario",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "tema",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="lojas",
+                        to="custom_auth.theme",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Loja',
-                'verbose_name_plural': 'Lojas',
+                "verbose_name": "Loja",
+                "verbose_name_plural": "Lojas",
             },
         ),
         migrations.AddField(
-            model_name='user',
-            name='lojas',
-            field=models.ManyToManyField(blank=True, related_name='usuarios', to='custom_auth.loja'),
+            model_name="user",
+            name="lojas",
+            field=models.ManyToManyField(
+                blank=True, related_name="usuarios", to="custom_auth.loja"
+            ),
         ),
         migrations.CreateModel(
-            name='Vendedor',
+            name="Vendedor",
             fields=[
-                ('id', models.BigAutoField(primary_key=True, serialize=False)),
-                ('nome_loja', models.CharField(max_length=255)),
-                ('descricao_loja', models.TextField(blank=True, null=True)),
-                ('data_cadastro', models.DateTimeField(auto_now_add=True)),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='vendedor', to=settings.AUTH_USER_MODEL)),
+                ("id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("nome_loja", models.CharField(max_length=255)),
+                ("descricao_loja", models.TextField(blank=True, null=True)),
+                ("data_cadastro", models.DateTimeField(auto_now_add=True)),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="vendedor",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Vendedor',
-                'verbose_name_plural': 'Vendedores',
+                "verbose_name": "Vendedor",
+                "verbose_name_plural": "Vendedores",
             },
         ),
     ]

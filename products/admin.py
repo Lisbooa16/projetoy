@@ -1,15 +1,16 @@
 # apps/products/admin.py
 from __future__ import annotations
 
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
+
 from django.contrib import admin, messages
 from django.db.models import Count, Q
 from django.utils import timezone
 
 from .models import Categoria, Produto, Promocao
 
-
 # -------------------- Inlines --------------------
+
 
 class ProdutoInline(admin.TabularInline):
     model = Produto
@@ -22,6 +23,7 @@ class ProdutoInline(admin.TabularInline):
 
 
 # -------------------- ListFilters custom --------------------
+
 
 class EstoqueVazioFilter(admin.SimpleListFilter):
     title = "Estoque"
@@ -63,6 +65,7 @@ class PromocaoAtivaFilter(admin.SimpleListFilter):
 
 # -------------------- Admins --------------------
 
+
 @admin.register(Categoria)
 class CategoriaAdmin(admin.ModelAdmin):
     list_display = ("nome", "qtd_produtos", "created_at")
@@ -81,7 +84,14 @@ class CategoriaAdmin(admin.ModelAdmin):
 
 @admin.register(Produto)
 class ProdutoAdmin(admin.ModelAdmin):
-    list_display = ("nome", "categoria", "preco", "estoque", "codigo_barras", "em_promocao")
+    list_display = (
+        "nome",
+        "categoria",
+        "preco",
+        "estoque",
+        "codigo_barras",
+        "em_promocao",
+    )
     list_filter = ("categoria", "promocoes", EstoqueVazioFilter)
     search_fields = ("nome", "descricao", "codigo_barras")
     ordering = ("nome",)
@@ -101,10 +111,11 @@ class ProdutoAdmin(admin.ModelAdmin):
         # remove qualquer select_related herdado do ChangeList
         qs = queryset.select_related(None).only("id", "preco")
 
-        from decimal import Decimal, ROUND_HALF_UP
         updated = 0
         for p in qs:
-            novo = (Decimal(p.preco) * (Decimal("1.0") + percent)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            novo = (Decimal(p.preco) * (Decimal("1.0") + percent)).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
             if novo < 0:
                 novo = Decimal("0.00")
             if novo != p.preco:
@@ -117,12 +128,18 @@ class ProdutoAdmin(admin.ModelAdmin):
             messages.info(request, "Nenhum produto precisou de atualização.")
 
     def aumentar_preco_10(self, request, queryset):
-        self._ajustar_preco(request, queryset, Decimal("0.10"), "Aumento de 10% aplicado")
+        self._ajustar_preco(
+            request, queryset, Decimal("0.10"), "Aumento de 10% aplicado"
+        )
+
     aumentar_preco_10.short_description = "Aumentar preço em 10%%"  # <- ESCAPADO
 
     def reduzir_preco_10(self, request, queryset):
-        self._ajustar_preco(request, queryset, Decimal("-0.10"), "Redução de 10% aplicada")
-    reduzir_preco_10.short_description = "Reduzir preço em 10%%"    # <- ESCAPADO
+        self._ajustar_preco(
+            request, queryset, Decimal("-0.10"), "Redução de 10% aplicada"
+        )
+
+    reduzir_preco_10.short_description = "Reduzir preço em 10%%"  # <- ESCAPADO
 
     def zerar_estoque(self, request, queryset):
         updated = queryset.update(estoque=0)
@@ -130,12 +147,20 @@ class ProdutoAdmin(admin.ModelAdmin):
             messages.warning(request, f"Estoque zerado em {updated} produto(s).")
         else:
             messages.info(request, "Nenhum produto atualizado.")
+
     zerar_estoque.short_description = "Zerar estoque"
 
 
 @admin.register(Promocao)
 class PromocaoAdmin(admin.ModelAdmin):
-    list_display = ("nome", "desconto_percentual", "data_inicio", "data_fim", "ativa_agora", "qtd_produtos")
+    list_display = (
+        "nome",
+        "desconto_percentual",
+        "data_inicio",
+        "data_fim",
+        "ativa_agora",
+        "qtd_produtos",
+    )
     list_filter = (PromocaoAtivaFilter, "data_inicio", "data_fim")
     search_fields = ("nome", "descricao", "produtos__nome", "produtos__codigo_barras")
     ordering = ("-data_inicio",)

@@ -5,90 +5,138 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Categoria',
+            name="Categoria",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('is_deleted', models.BooleanField(default=False)),
-                ('is_active', models.BooleanField(default=True)),
-                ('nome', models.CharField(max_length=100, unique=True)),
-                ('descricao', models.TextField(blank=True, null=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("is_deleted", models.BooleanField(default=False)),
+                ("is_active", models.BooleanField(default=True)),
+                ("nome", models.CharField(max_length=100, unique=True)),
+                ("descricao", models.TextField(blank=True, null=True)),
             ],
             options={
-                'verbose_name': 'Categoria',
-                'verbose_name_plural': 'Categorias',
-                'ordering': ['nome'],
-                'get_latest_by': 'created_at',
-                'indexes': [models.Index(fields=['nome'], name='products_ca_nome_38c1fe_idx')],
+                "verbose_name": "Categoria",
+                "verbose_name_plural": "Categorias",
+                "ordering": ["nome"],
+                "get_latest_by": "created_at",
+                "indexes": [
+                    models.Index(fields=["nome"], name="products_ca_nome_38c1fe_idx")
+                ],
             },
         ),
         migrations.CreateModel(
-            name='Produto',
+            name="Produto",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('is_deleted', models.BooleanField(default=False)),
-                ('is_active', models.BooleanField(default=True)),
-                ('nome', models.CharField(max_length=255)),
-                ('descricao', models.TextField(blank=True, null=True)),
-                ('preco', models.DecimalField(decimal_places=2, max_digits=10)),
-                ('estoque', models.PositiveIntegerField(default=0)),
-                ('codigo_barras', models.CharField(blank=True, max_length=100, null=True, unique=True)),
-                ('categoria', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='produtos', to='products.categoria')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("is_deleted", models.BooleanField(default=False)),
+                ("is_active", models.BooleanField(default=True)),
+                ("nome", models.CharField(max_length=255)),
+                ("descricao", models.TextField(blank=True, null=True)),
+                ("preco", models.DecimalField(decimal_places=2, max_digits=10)),
+                ("estoque", models.PositiveIntegerField(default=0)),
+                (
+                    "codigo_barras",
+                    models.CharField(
+                        blank=True, max_length=100, null=True, unique=True
+                    ),
+                ),
+                (
+                    "categoria",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="produtos",
+                        to="products.categoria",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Produto',
-                'verbose_name_plural': 'Produtos',
-                'ordering': ['nome'],
-                'get_latest_by': 'created_at',
+                "verbose_name": "Produto",
+                "verbose_name_plural": "Produtos",
+                "ordering": ["nome"],
+                "get_latest_by": "created_at",
             },
         ),
         migrations.CreateModel(
-            name='Promocao',
+            name="Promocao",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('is_deleted', models.BooleanField(default=False)),
-                ('is_active', models.BooleanField(default=True)),
-                ('nome', models.CharField(max_length=100)),
-                ('descricao', models.TextField(blank=True, null=True)),
-                ('desconto_percentual', models.DecimalField(decimal_places=2, max_digits=5)),
-                ('data_inicio', models.DateTimeField()),
-                ('data_fim', models.DateTimeField()),
-                ('produtos', models.ManyToManyField(blank=True, related_name='promocoes', to='products.produto')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("is_deleted", models.BooleanField(default=False)),
+                ("is_active", models.BooleanField(default=True)),
+                ("nome", models.CharField(max_length=100)),
+                ("descricao", models.TextField(blank=True, null=True)),
+                (
+                    "desconto_percentual",
+                    models.DecimalField(decimal_places=2, max_digits=5),
+                ),
+                ("data_inicio", models.DateTimeField()),
+                ("data_fim", models.DateTimeField()),
+                (
+                    "produtos",
+                    models.ManyToManyField(
+                        blank=True, related_name="promocoes", to="products.produto"
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Promoção',
-                'verbose_name_plural': 'Promoções',
-                'ordering': ['-data_inicio'],
-                'get_latest_by': 'created_at',
+                "verbose_name": "Promoção",
+                "verbose_name_plural": "Promoções",
+                "ordering": ["-data_inicio"],
+                "get_latest_by": "created_at",
             },
         ),
         migrations.AddIndex(
-            model_name='produto',
-            index=models.Index(fields=['nome'], name='products_pr_nome_5e2a77_idx'),
+            model_name="produto",
+            index=models.Index(fields=["nome"], name="products_pr_nome_5e2a77_idx"),
         ),
         migrations.AddIndex(
-            model_name='promocao',
-            index=models.Index(fields=['nome'], name='products_pr_nome_09fc6d_idx'),
+            model_name="promocao",
+            index=models.Index(fields=["nome"], name="products_pr_nome_09fc6d_idx"),
         ),
         migrations.AddIndex(
-            model_name='promocao',
-            index=models.Index(fields=['data_inicio'], name='products_pr_data_in_b51edf_idx'),
+            model_name="promocao",
+            index=models.Index(
+                fields=["data_inicio"], name="products_pr_data_in_b51edf_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='promocao',
-            index=models.Index(fields=['data_fim'], name='products_pr_data_fi_a68ab8_idx'),
+            model_name="promocao",
+            index=models.Index(
+                fields=["data_fim"], name="products_pr_data_fi_a68ab8_idx"
+            ),
         ),
     ]

@@ -3,7 +3,12 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from custom_auth.views_mixins import BaseFrontPerm
-from products.serializers import CategorySerializer, ProductSerializer, PromotionSerializer
+from products.serializers import (
+    CategorySerializer,
+    ProductSerializer,
+    PromotionSerializer,
+)
+
 from .models import Categoria as CategoryModel
 from .models import Produto as ProductModel
 from .models import Promocao as PromotionModel
@@ -25,8 +30,18 @@ class Category(BaseFrontPerm):
             try:
                 category = CategoryModel.objects.get(id=_id)
             except CategoryModel.DoesNotExist:
-                return Response({"error": "Categoria não encontrada."}, status=status.HTTP_404_NOT_FOUND)
-            return Response({"id": category.id, "name": category.nome, "description": category.descricao}, status=status.HTTP_200_OK)
+                return Response(
+                    {"error": "Categoria não encontrada."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            return Response(
+                {
+                    "id": category.id,
+                    "name": category.nome,
+                    "description": category.descricao,
+                },
+                status=status.HTTP_200_OK,
+            )
 
         categories = CategoryModel.objects.all().values("id", "nome", "descricao")
         return Response(categories, status=status.HTTP_200_OK)
@@ -39,18 +54,30 @@ class Category(BaseFrontPerm):
 
         serializer.save()
         category = serializer.instance
-        return Response({"id": category.id, "name": category.nome, "description": category.descricao}, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "id": category.id,
+                "name": category.nome,
+                "description": category.descricao,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
     def delete(self, request, *args, **kwargs):
         """Deletar uma categoria por ID"""
         category_id = request.query_params.get("id")
         if not category_id:
-            return Response({"error": "ID da categoria é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "ID da categoria é obrigatório."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             category = CategoryModel.objects.get(id=category_id)
         except CategoryModel.DoesNotExist:
-            return Response({"error": "Categoria não encontrada."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Categoria não encontrada."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         category.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -59,12 +86,17 @@ class Category(BaseFrontPerm):
         """Atualizar uma categoria existente por ID"""
         category_id = request.query_params.get("id")
         if not category_id:
-            return Response({"error": "ID da categoria é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "ID da categoria é obrigatório."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             category = CategoryModel.objects.get(id=category_id)
         except CategoryModel.DoesNotExist:
-            return Response({"error": "Categoria não encontrada."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Categoria não encontrada."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         serializer = self.get_serializer(category, data=request.data, partial=True)
         if not serializer.is_valid():
@@ -72,7 +104,10 @@ class Category(BaseFrontPerm):
 
         serializer.save()
         updated = serializer.instance
-        return Response({"id": updated.id, "name": updated.nome, "description": updated.descricao}, status=status.HTTP_200_OK)
+        return Response(
+            {"id": updated.id, "name": updated.nome, "description": updated.descricao},
+            status=status.HTTP_200_OK,
+        )
 
 
 class Product(BaseFrontPerm):
@@ -91,17 +126,23 @@ class Product(BaseFrontPerm):
             try:
                 product = ProductModel.objects.get(id=_id)
             except ProductModel.DoesNotExist:
-                return Response({"error": "Produto não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+                return Response(
+                    {"error": "Produto não encontrado."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
 
-            return Response({
-                "id": product.id,
-                "name": product.nome,
-                "description": product.descricao,
-                "price": product.preco,
-                "stock": product.estoque,
-                "barcode": product.codigo_barras,
-                "category_id": product.categoria.id if product.categoria else None
-            }, status=status.HTTP_200_OK)
+            return Response(
+                {
+                    "id": product.id,
+                    "name": product.nome,
+                    "description": product.descricao,
+                    "price": product.preco,
+                    "stock": product.estoque,
+                    "barcode": product.codigo_barras,
+                    "category_id": product.categoria.id if product.categoria else None,
+                },
+                status=status.HTTP_200_OK,
+            )
 
         products = ProductModel.objects.all().values(
             "id", "nome", "descricao", "preco", "estoque", "codigo_barras", "categoria"
@@ -116,26 +157,34 @@ class Product(BaseFrontPerm):
 
         serializer.save()
         product = serializer.instance
-        return Response({
-            "id": product.id,
-            "name": product.nome,
-            "description": product.descricao,
-            "price": product.preco,
-            "stock": product.estoque,
-            "barcode": product.codigo_barras,
-            "category_id": product.categoria.id if product.categoria else None
-        }, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "id": product.id,
+                "name": product.nome,
+                "description": product.descricao,
+                "price": product.preco,
+                "stock": product.estoque,
+                "barcode": product.codigo_barras,
+                "category_id": product.categoria.id if product.categoria else None,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
     def delete(self, request, *args, **kwargs):
         """Deletar um produto por ID"""
         product_id = request.query_params.get("id")
         if not product_id:
-            return Response({"error": "ID do produto é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "ID do produto é obrigatório."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             product = ProductModel.objects.get(id=product_id)
         except ProductModel.DoesNotExist:
-            return Response({"error": "Produto não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Produto não encontrado."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -144,12 +193,17 @@ class Product(BaseFrontPerm):
         """Atualizar um produto existente por ID"""
         product_id = request.query_params.get("id")
         if not product_id:
-            return Response({"error": "ID do produto é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "ID do produto é obrigatório."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             product = ProductModel.objects.get(id=product_id)
         except ProductModel.DoesNotExist:
-            return Response({"error": "Produto não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Produto não encontrado."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         serializer = self.get_serializer(product, data=request.data, partial=True)
         if not serializer.is_valid():
@@ -157,15 +211,18 @@ class Product(BaseFrontPerm):
 
         serializer.save()
         updated = serializer.instance
-        return Response({
-            "id": updated.id,
-            "name": updated.nome,
-            "description": updated.descricao,
-            "price": updated.preco,
-            "stock": updated.estoque,
-            "barcode": updated.codigo_barras,
-            "category_id": updated.categoria.id if updated.categoria else None
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "id": updated.id,
+                "name": updated.nome,
+                "description": updated.descricao,
+                "price": updated.preco,
+                "stock": updated.estoque,
+                "barcode": updated.codigo_barras,
+                "category_id": updated.categoria.id if updated.categoria else None,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class Promotion(BaseFrontPerm):
@@ -184,17 +241,25 @@ class Promotion(BaseFrontPerm):
             try:
                 promotion = PromotionModel.objects.get(id=_id)
             except PromotionModel.DoesNotExist:
-                return Response({"error": "Promoção não encontrada."}, status=status.HTTP_404_NOT_FOUND)
+                return Response(
+                    {"error": "Promoção não encontrada."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
 
-            return Response({
-                "id": promotion.id,
-                "name": promotion.nome,
-                "description": promotion.descricao,
-                "discount_percentage": promotion.desconto_percentual,
-                "start_date": promotion.data_inicio,
-                "end_date": promotion.data_fim,
-                "product_ids": list(promotion.produtos.values_list("id", flat=True)),
-            }, status=status.HTTP_200_OK)
+            return Response(
+                {
+                    "id": promotion.id,
+                    "name": promotion.nome,
+                    "description": promotion.descricao,
+                    "discount_percentage": promotion.desconto_percentual,
+                    "start_date": promotion.data_inicio,
+                    "end_date": promotion.data_fim,
+                    "product_ids": list(
+                        promotion.produtos.values_list("id", flat=True)
+                    ),
+                },
+                status=status.HTTP_200_OK,
+            )
 
         promotions = PromotionModel.objects.all().values(
             "id", "nome", "descricao", "desconto_percentual", "data_inicio", "data_fim"
@@ -209,26 +274,34 @@ class Promotion(BaseFrontPerm):
 
         serializer.save()
         promotion = serializer.instance
-        return Response({
-            "id": promotion.id,
-            "name": promotion.nome,
-            "description": promotion.descricao,
-            "discount_percentage": promotion.desconto_percentual,
-            "start_date": promotion.data_inicio,
-            "end_date": promotion.data_fim,
-            "product_ids": list(promotion.produtos.values_list("id", flat=True)),
-        }, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "id": promotion.id,
+                "name": promotion.nome,
+                "description": promotion.descricao,
+                "discount_percentage": promotion.desconto_percentual,
+                "start_date": promotion.data_inicio,
+                "end_date": promotion.data_fim,
+                "product_ids": list(promotion.produtos.values_list("id", flat=True)),
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
     def delete(self, request, *args, **kwargs):
         """Deletar uma promoção por ID"""
         promotion_id = request.query_params.get("id")
         if not promotion_id:
-            return Response({"error": "ID da promoção é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "ID da promoção é obrigatório."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             promotion = PromotionModel.objects.get(id=promotion_id)
         except PromotionModel.DoesNotExist:
-            return Response({"error": "Promoção não encontrada."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Promoção não encontrada."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         promotion.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -237,12 +310,17 @@ class Promotion(BaseFrontPerm):
         """Atualizar uma promoção existente por ID"""
         promotion_id = request.query_params.get("id")
         if not promotion_id:
-            return Response({"error": "ID da promoção é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "ID da promoção é obrigatório."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             promotion = PromotionModel.objects.get(id=promotion_id)
         except PromotionModel.DoesNotExist:
-            return Response({"error": "Promoção não encontrada."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Promoção não encontrada."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         serializer = self.get_serializer(promotion, data=request.data, partial=True)
         if not serializer.is_valid():
@@ -250,12 +328,15 @@ class Promotion(BaseFrontPerm):
 
         serializer.save()
         updated = serializer.instance
-        return Response({
-            "id": updated.id,
-            "name": updated.nome,
-            "description": updated.descricao,
-            "discount_percentage": updated.desconto_percentual,
-            "start_date": updated.data_inicio,
-            "end_date": updated.data_fim,
-            "product_ids": list(updated.produtos.values_list("id", flat=True)),
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "id": updated.id,
+                "name": updated.nome,
+                "description": updated.descricao,
+                "discount_percentage": updated.desconto_percentual,
+                "start_date": updated.data_inicio,
+                "end_date": updated.data_fim,
+                "product_ids": list(updated.produtos.values_list("id", flat=True)),
+            },
+            status=status.HTTP_200_OK,
+        )

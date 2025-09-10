@@ -19,6 +19,7 @@ class BaseFrontPerm(GenericAPIView):
                 "DELETE": "product.delete",
             }
     """
+
     permission_classes = [IsAuthenticated, HasFrontPerm]
     required_perm_map: dict[str, str] = {}
 
