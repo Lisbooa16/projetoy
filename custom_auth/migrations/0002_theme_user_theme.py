@@ -5,31 +5,36 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('custom_auth', '0001_initial'),
+        ("custom_auth", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Theme',
+            name="Theme",
             fields=[
-                ('id', models.BigAutoField(primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=100, unique=True)),
-                ('slug', models.SlugField(max_length=100, unique=True)),
-                ('is_active', models.BooleanField(default=True)),
-                ('variables', models.JSONField(blank=True, default=dict)),
-                ('logo_url', models.URLField(blank=True, null=True)),
-                ('favicon_url', models.URLField(blank=True, null=True)),
+                ("id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("name", models.CharField(max_length=100, unique=True)),
+                ("slug", models.SlugField(max_length=100, unique=True)),
+                ("is_active", models.BooleanField(default=True)),
+                ("variables", models.JSONField(blank=True, default=dict)),
+                ("logo_url", models.URLField(blank=True, null=True)),
+                ("favicon_url", models.URLField(blank=True, null=True)),
             ],
             options={
-                'verbose_name': 'Theme',
-                'verbose_name_plural': 'Themes',
+                "verbose_name": "Theme",
+                "verbose_name_plural": "Themes",
             },
         ),
         migrations.AddField(
-            model_name='user',
-            name='theme',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='users', to='custom_auth.theme'),
+            model_name="user",
+            name="theme",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="users",
+                to="custom_auth.theme",
+            ),
         ),
     ]

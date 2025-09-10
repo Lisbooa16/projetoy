@@ -27,4 +27,5 @@ urlpatterns = [
         PasswordResetConfirmView.as_view(),
         name="password_reset_confirm",
     ),
+    path("permissions/", include("rest_framework.urls", namespace="rest_framework")),
 ]

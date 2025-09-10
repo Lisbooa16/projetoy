@@ -5,16 +5,22 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('admin_interface', '0030_theme_collapsible_stacked_inlines_and_more'),
-        ('custom_auth', '0002_theme_user_theme'),
+        ("admin_interface", "0030_theme_collapsible_stacked_inlines_and_more"),
+        ("custom_auth", "0002_theme_user_theme"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='admin_theme',
-            field=models.ForeignKey(blank=True, help_text='Tema do django-admin-interface para este usuário.', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='users_with_admin_theme', to='admin_interface.theme'),
+            model_name="user",
+            name="admin_theme",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="Tema do django-admin-interface para este usuário.",
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="users_with_admin_theme",
+                to="admin_interface.theme",
+            ),
         ),
     ]
