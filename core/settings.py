@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "inventory",
     "finance",
     "invoicing",
+    "reports",
 ]
 
 AUTH_USER_MODEL = "custom_auth.User"
