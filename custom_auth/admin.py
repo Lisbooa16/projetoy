@@ -5,11 +5,19 @@ from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils.translation import gettext_lazy as _
 
-from custom_auth.models.user import FrontPermission, Role, UserFrontPermission, UserRole
+# Importa tudo do próprio app (evita caminho errado tipo custom_auth.models.user)
+from .models import (
+    FrontPermission,
+    Loja,
+    Role,
+    Theme,
+    User,
+    UserFrontPermission,
+    UserRole,
+    Vendedor,
+)
 
-from .models import Loja, Theme, User, Vendedor
-
-# ---------- Inlines ----------
+# ---------- Inlines / Admins auxiliares ----------
 
 
 @admin.register(FrontPermission)
@@ -78,7 +86,6 @@ class UserRoleInline(admin.TabularInline):
     verbose_name = "Papel do usuário"
     verbose_name_plural = "Papéis do usuário"
 
-    # ajuda performance
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.select_related("role", "loja")
@@ -122,15 +129,18 @@ class ThemeAdmin(admin.ModelAdmin):
     list_filter = ("is_active",)
     search_fields = ("name", "slug")
     prepopulated_fields = {"slug": ("name",)}
-    readonly_fields = ()
     ordering = ("name",)
 
 
 @admin.register(Vendedor)
 class VendedorAdmin(admin.ModelAdmin):
     list_display = ("user", "nome_loja", "data_cadastro")
-    search_fields = ("user__username", "user__email", "nome_loja")
-    autocomplete_fields = ("user",)
+    search_fields = (
+        "user__username",
+        "user__email",
+        "nome_loja__nome",  # campo correto no FK
+    )
+    autocomplete_fields = ("user", "nome_loja")
     ordering = ("-id",)
     date_hierarchy = "data_cadastro"
 
@@ -213,8 +223,12 @@ class UserAdmin(DjangoUserAdmin):
         ),
     )
 
-    # --------- Ações em lote para aplicar/remover temas do FRONT ---------
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        # melhora a performance nas telas de listagem e detalhe
+        return qs.select_related("theme", "admin_theme").prefetch_related("lojas")
 
+    # --------- Ações em lote para aplicar/remover temas do FRONT ---------
     actions = ["remover_tema"]
 
     def remover_tema(self, request, queryset):
@@ -278,3 +292,7 @@ class LojaAdmin(admin.ModelAdmin):
     autocomplete_fields = ("dono", "tema")
     ordering = ("-id",)
     date_hierarchy = "data_criacao"
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("dono", "tema")

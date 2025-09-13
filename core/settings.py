@@ -42,6 +42,12 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "custom_auth",
     "products",
+    "sales",
+    "commissions",
+    "pricing",
+    "inventory",
+    "finance",
+    "invoicing",
 ]
 
 AUTH_USER_MODEL = "custom_auth.User"

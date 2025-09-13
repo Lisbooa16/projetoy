@@ -1,4 +1,3 @@
-# apps/custom_auth/models.py
 from __future__ import annotations
 
 import uuid
@@ -9,11 +8,9 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q, UniqueConstraint
-from django.db.models.signals import post_delete, post_save
+from django.db.models.signals import m2m_changed, post_delete, post_save
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
-
-# ... (seus imports + classes Theme/User/Loja/Vendedor que você já tem)
 
 # Se você usa django-admin-interface:
 try:
@@ -98,8 +95,6 @@ class User(AbstractUser):
         help_text="Tema do django-admin-interface para este usuário.",
     )
 
-    # Observação: manteremos M2M mesmo com Loja.dono (FK) para permitir
-    # múltiplos usuários colaborando em uma mesma loja.
     lojas = models.ManyToManyField("Loja", related_name="usuarios", blank=True)
 
     USERNAME_FIELD = "username"
@@ -112,15 +107,9 @@ class User(AbstractUser):
     def __str__(self) -> str:
         return self.display_name or self.get_full_name() or self.username
 
-    # ---------- Resolução de temas (conveniências) ----------
+    # ---------- Resolução de temas ----------
 
     def get_effective_front_theme(self, loja: "Loja | None" = None) -> Optional[Theme]:
-        """
-        Prioridade:
-        1) theme definido no usuário
-        2) tema da loja informada (ou primeira loja do usuário)
-        3) Theme.get_active()
-        """
         if self.theme:
             return self.theme
 
@@ -131,15 +120,9 @@ class User(AbstractUser):
         return Theme.get_active()
 
     def get_effective_admin_theme(self) -> Optional[AdminTheme]:
-        """
-        Prioridade:
-        1) admin_theme definido no usuário
-        2) admin_interface Theme ativo (fallback)
-        """
         if self.admin_theme:
             return self.admin_theme
 
-        # Fallback: tenta um tema ativo global do admin-interface (se existir)
         try:
             return (
                 AdminTheme.objects.filter(Q(active=True) | Q(is_active=True))
@@ -149,33 +132,25 @@ class User(AbstractUser):
         except Exception:
             return None
 
+    # ---------- Permissões do FRONT ----------
+
     @lru_cache(maxsize=512)
     def _collect_front_codenames(self, loja: "Loja | int | None" = None) -> set[str]:
-        """
-        Junta codenames vindos de:
-          - permissões diretas do user (globais + da loja)
-          - papéis do user (globais + da loja) e suas permissões
-        Aceita loja (objeto) ou loja_id (int).
-        """
         loja_id = getattr(loja, "id", loja)
 
-        # diretas (globais)
         direct_global = FrontPermission.objects.filter(
             user_assignments__user=self, user_assignments__loja__isnull=True
         ).values_list("codename", flat=True)
 
-        # diretas (escopo loja)
         direct_scoped = FrontPermission.objects.filter(
             user_assignments__user=self, user_assignments__loja_id=loja_id
         ).values_list("codename", flat=True)
 
-        # via roles globais
         role_global = FrontPermission.objects.filter(
             roles__user_memberships__user=self,
             roles__user_memberships__loja__isnull=True,
         ).values_list("codename", flat=True)
 
-        # via roles da loja
         role_scoped = FrontPermission.objects.filter(
             roles__user_memberships__user=self, roles__user_memberships__loja_id=loja_id
         ).values_list("codename", flat=True)
@@ -188,18 +163,12 @@ class User(AbstractUser):
         )
 
     def has_front_perm(self, codename: str, loja: "Loja | int | None" = None) -> bool:
-        """
-        Checa se o usuário possui a permissão de FRONT.
-        Se 'loja' for informado, considera (1) perms globais e (2) perms/papéis da loja.
-        """
         return codename in self._collect_front_codenames(loja)
 
     def front_perms(self, loja: "Loja | int | None" = None) -> set[str]:
-        """Retorna o conjunto de codenames resolvidos (útil pra debug/UI)."""
         return self._collect_front_codenames(loja)
 
     def clear_front_perm_cache(self):
-        """Chame após mudar papéis/permissões do user na mesma request."""
         try:
             self._collect_front_codenames.cache_clear()
         except Exception:
@@ -215,14 +184,12 @@ class Loja(models.Model):
     nome = models.CharField(max_length=255)
     descricao = models.TextField(blank=True, null=True)
 
-    # Dono principal (FK)
     dono = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="lojas_proprietario",
     )
 
-    # Tema do FRONT para esta loja
     tema = models.ForeignKey(
         Theme,
         on_delete=models.SET_NULL,
@@ -246,12 +213,6 @@ class Loja(models.Model):
         return self.nome
 
     def get_effective_front_theme(self) -> Optional[Theme]:
-        """
-        Prioridade da loja:
-        1) tema definido na loja
-        2) tema do dono (User.theme)
-        3) Theme.get_active()
-        """
         if self.tema:
             return self.tema
         if getattr(self.dono, "theme", None):
@@ -283,33 +244,15 @@ class Vendedor(models.Model):
             else (self.user.username or str(self.pk))
         )
 
-
-# -------------------- SINAIS DE SINCRONIZAÇÃO --------------------
-
-
-@receiver(post_save, sender=Loja)
-def _sync_loja_m2m_on_create(sender, instance: Loja, created: bool, **kwargs):
-    """
-    Garante que o dono da Loja também faça parte do M2M `usuarios`.
-    """
-    if created and instance.dono:
-        instance.usuarios.add(instance.dono)
+    @property
+    def loja(self) -> Loja:
+        return self.nome_loja
 
 
-@receiver(post_delete, sender=Loja)
-def _cleanup_user_lojas_on_delete(sender, instance: Loja, **kwargs):
-    """
-    Limpa vínculos M2M com usuários ao deletar a loja.
-    (Django já cuida, mas manter explícito ajuda a consistência em alguns casos.)
-    """
-    instance.usuarios.clear()
+# -------------------- PERMISSÕES DO FRONT --------------------
 
 
 class FrontPermission(models.Model):
-    """
-    Permissão do FRONT. Use codenames estáveis (ex.: "product.view", "product.edit").
-    """
-
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=255, unique=True)
     codename = models.CharField(max_length=120, unique=True)
@@ -323,10 +266,6 @@ class FrontPermission(models.Model):
 
 
 class Role(models.Model):
-    """
-    Papel (conjunto de permissões). Ex.: 'vendedor', 'gerente', 'dono'.
-    """
-
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=120, unique=True)
     description = models.TextField(blank=True, null=True)
@@ -343,11 +282,6 @@ class Role(models.Model):
 
 
 class UserFrontPermission(models.Model):
-    """
-    Permissão atribuída diretamente ao usuário, opcionalmente escopada por Loja.
-    Se loja = NULL, a permissão vale globalmente para o usuário.
-    """
-
     id = models.BigAutoField(primary_key=True)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -374,6 +308,9 @@ class UserFrontPermission(models.Model):
                 name="uniq_user_front_perm_per_loja",
             ),
         ]
+        indexes = [
+            models.Index(fields=["user", "loja"], name="idx_ufp_user_loja"),
+        ]
 
     def __str__(self) -> str:
         scope = self.loja_id and f"@{self.loja_id}" or "@global"
@@ -381,10 +318,6 @@ class UserFrontPermission(models.Model):
 
 
 class UserRole(models.Model):
-    """
-    Papel atribuído ao usuário, opcionalmente escopado por Loja.
-    """
-
     id = models.BigAutoField(primary_key=True)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="roles_rel"
@@ -408,7 +341,63 @@ class UserRole(models.Model):
                 fields=["user", "role", "loja"], name="uniq_user_role_per_loja"
             ),
         ]
+        indexes = [
+            models.Index(fields=["user", "loja"], name="idx_ur_user_loja"),
+        ]
 
     def __str__(self) -> str:
         scope = self.loja_id and f"@{self.loja_id}" or "@global"
         return f"{self.user_id}:{self.role.name}{scope}"
+
+
+# -------------------- SINAIS --------------------
+
+
+@receiver(post_save, sender=Loja)
+def _sync_loja_m2m_on_create(sender, instance: Loja, created: bool, **kwargs):
+    if created and instance.dono:
+        instance.usuarios.add(instance.dono)
+
+
+@receiver(post_delete, sender=Loja)
+def _cleanup_user_lojas_on_delete(sender, instance: Loja, **kwargs):
+    instance.usuarios.clear()
+
+
+# --------- INVALIDAÇÃO AUTOMÁTICA DO CACHE DE PERMISSÕES ---------
+
+
+@receiver([post_save, post_delete], sender=UserFrontPermission)
+def _invalidate_user_perm_cache_for_direct(
+    sender, instance: UserFrontPermission, **kwargs
+):
+    try:
+        instance.user.clear_front_perm_cache()
+    except Exception:
+        pass
+
+
+@receiver([post_save, post_delete], sender=UserRole)
+def _invalidate_user_perm_cache_for_role(sender, instance: UserRole, **kwargs):
+    try:
+        instance.user.clear_front_perm_cache()
+    except Exception:
+        pass
+
+
+@receiver(m2m_changed, sender=Role.permissions.through)
+def _invalidate_role_permissions_changed(sender, instance: Role, action, **kwargs):
+    if action not in {"post_add", "post_remove", "post_clear"}:
+        return
+    try:
+        user_ids = list(instance.user_memberships.values_list("user_id", flat=True))
+        for uid in set(user_ids):
+            from custom_auth.models import User
+
+            try:
+                u = User.objects.get(pk=uid)
+                u.clear_front_perm_cache()
+            except User.DoesNotExist:
+                continue
+    except Exception:
+        pass
