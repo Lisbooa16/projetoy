@@ -20,12 +20,4 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("django.contrib.auth.urls")),
     path("api/", include("custom_auth.urls")),
-    path("api/products/", include("products.urls")),
-    path("api/sales/", include("sales.urls")),
-    path("api/pricing/", include("pricing.urls")),
-    path("api/commissions/", include("commissions.urls")),
-    path("api/inventory/", include("inventory.urls")),
-    path("api/finance/", include("finance.urls")),
-    path("api/invoicing/", include("invoicing.urls")),
-    path("api/reports/", include("reports.urls")),
 ]

@@ -12,54 +12,6 @@ from django.db.models.signals import m2m_changed, post_delete, post_save
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 
-# Se você usa django-admin-interface:
-try:
-    from admin_interface.models import Theme as AdminTheme
-except Exception:  # fallback opcional se o pacote não estiver instalado
-
-    class AdminTheme(models.Model):  # type: ignore
-        title = models.CharField(max_length=100)
-        active = models.BooleanField(default=False)
-
-        class Meta:
-            managed = False  # somente pra evitar migração quando não instalado
-
-        def __str__(self):
-            return getattr(self, "title", "Admin Theme")
-
-
-class Theme(models.Model):
-    """
-    Tema do FRONT (loja/site). Guarda variáveis CSS e mídias.
-    """
-
-    id = models.BigAutoField(primary_key=True)
-    name = models.CharField(max_length=100, unique=True)
-    slug = models.SlugField(max_length=100, unique=True)
-    is_active = models.BooleanField(default=True)
-
-    # Ex.: {"--color-bg":"#0b0b0b","--color-text":"#fafafa","--primary":"#7c3aed"}
-    variables = models.JSONField(default=dict, blank=True)
-
-    logo_url = models.URLField(blank=True, null=True)
-    favicon_url = models.URLField(blank=True, null=True)
-
-    class Meta:
-        verbose_name = "Theme"
-        verbose_name_plural = "Themes"
-
-    def __str__(self) -> str:
-        return self.name
-
-    @classmethod
-    def get_active(cls) -> Optional["Theme"]:
-        """
-        Retorna 1 tema ativo (prioriza o mais recente).
-        Útil como fallback quando user/loja não definem tema.
-        """
-        return cls.objects.filter(is_active=True).order_by("-id").first()
-
-
 class User(AbstractUser):
     """
     Usuário customizado.
@@ -76,25 +28,6 @@ class User(AbstractUser):
     display_name = models.CharField(_("display name"), max_length=150, blank=True)
 
     is_email_verified = models.BooleanField(default=False)
-
-    theme = models.ForeignKey(
-        "custom_auth.Theme",
-        on_delete=models.SET_NULL,
-        related_name="users",
-        null=True,
-        blank=True,
-        help_text="Tema do FRONT preferido deste usuário.",
-    )
-
-    admin_theme = models.ForeignKey(
-        AdminTheme,
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="users_with_admin_theme",
-        help_text="Tema do django-admin-interface para este usuário.",
-    )
-
     lojas = models.ManyToManyField("Loja", related_name="usuarios", blank=True)
 
     USERNAME_FIELD = "username"
@@ -107,32 +40,6 @@ class User(AbstractUser):
     def __str__(self) -> str:
         return self.display_name or self.get_full_name() or self.username
 
-    # ---------- Resolução de temas ----------
-
-    def get_effective_front_theme(self, loja: "Loja | None" = None) -> Optional[Theme]:
-        if self.theme:
-            return self.theme
-
-        candidate_loja = loja or self.lojas.order_by("-id").first()
-        if candidate_loja and candidate_loja.tema:
-            return candidate_loja.tema
-
-        return Theme.get_active()
-
-    def get_effective_admin_theme(self) -> Optional[AdminTheme]:
-        if self.admin_theme:
-            return self.admin_theme
-
-        try:
-            return (
-                AdminTheme.objects.filter(Q(active=True) | Q(is_active=True))
-                .order_by("-id")
-                .first()
-            )
-        except Exception:
-            return None
-
-    # ---------- Permissões do FRONT ----------
 
     @lru_cache(maxsize=512)
     def _collect_front_codenames(self, loja: "Loja | int | None" = None) -> set[str]:
@@ -190,14 +97,6 @@ class Loja(models.Model):
         related_name="lojas_proprietario",
     )
 
-    tema = models.ForeignKey(
-        Theme,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="lojas",
-    )
-
     data_criacao = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -211,13 +110,6 @@ class Loja(models.Model):
 
     def __str__(self) -> str:
         return self.nome
-
-    def get_effective_front_theme(self) -> Optional[Theme]:
-        if self.tema:
-            return self.tema
-        if getattr(self.dono, "theme", None):
-            return self.dono.theme
-        return Theme.get_active()
 
 
 class Vendedor(models.Model):

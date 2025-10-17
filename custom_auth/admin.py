@@ -10,7 +10,6 @@ from .models import (
     FrontPermission,
     Loja,
     Role,
-    Theme,
     User,
     UserFrontPermission,
     UserRole,
@@ -114,22 +113,12 @@ class OwnedLojaInline(admin.TabularInline):
     model = Loja
     fk_name = "dono"
     extra = 0
-    fields = ("nome", "tema", "data_criacao")
+    fields = ("nome","data_criacao")
     readonly_fields = ("data_criacao",)
-    autocomplete_fields = ("tema",)
     show_change_link = True
 
 
 # ---------- ModelAdmins básicos ----------
-
-
-@admin.register(Theme)
-class ThemeAdmin(admin.ModelAdmin):
-    list_display = ("name", "slug", "is_active")
-    list_filter = ("is_active",)
-    search_fields = ("name", "slug")
-    prepopulated_fields = {"slug": ("name",)}
-    ordering = ("name",)
 
 
 @admin.register(Vendedor)
@@ -156,8 +145,6 @@ class UserAdmin(DjangoUserAdmin):
         "username",
         "email",
         "display_name",
-        "theme",
-        "admin_theme",
         "is_staff",
         "is_active",
     )
@@ -166,12 +153,9 @@ class UserAdmin(DjangoUserAdmin):
         "is_superuser",
         "is_active",
         "groups",
-        "theme",
-        "admin_theme",
     )
     search_fields = ("username", "email", "display_name", "first_name", "last_name")
     ordering = ("id",)
-    list_select_related = ("theme", "admin_theme")
 
     # inlines
     inlines = [OwnedLojaInline, UserRoleInline, UserFrontPermissionInline]
@@ -188,8 +172,6 @@ class UserAdmin(DjangoUserAdmin):
             _("Informações pessoais"),
             {"fields": ("first_name", "last_name", "display_name", "email")},
         ),
-        (_("Tema (Front/Loja)"), {"fields": ("theme", "lojas")}),
-        (_("Admin theme (django-admin-interface)"), {"fields": ("admin_theme",)}),
         (
             _("Permissões"),
             {
@@ -223,28 +205,8 @@ class UserAdmin(DjangoUserAdmin):
         ),
     )
 
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        # melhora a performance nas telas de listagem e detalhe
-        return qs.select_related("theme", "admin_theme").prefetch_related("lojas")
-
     # --------- Ações em lote para aplicar/remover temas do FRONT ---------
     actions = ["remover_tema"]
-
-    def remover_tema(self, request, queryset):
-        updated = queryset.update(theme=None)
-        if updated:
-            self.message_user(
-                request,
-                _(f"Tema removido de {updated} usuário(s)."),
-                level=messages.SUCCESS,
-            )
-        else:
-            self.message_user(
-                request, _("Nenhum usuário atualizado."), level=messages.INFO
-            )
-
-    remover_tema.short_description = _("Remover tema (Front)")
 
     def get_actions(self, request):
         """
@@ -254,45 +216,19 @@ class UserAdmin(DjangoUserAdmin):
         actions = super().get_actions(request)
 
         # cria uma action por Theme ativo
-        for t in Theme.objects.filter(is_active=True).order_by("name"):
-
-            def make_action(theme):
-                def _apply_theme(modeladmin, req, qs):
-                    count = qs.update(theme=theme)
-                    if count:
-                        modeladmin.message_user(
-                            req,
-                            _(f"Tema “{theme.name}” aplicado em {count} usuário(s)."),
-                            level=messages.SUCCESS,
-                        )
-                    else:
-                        modeladmin.message_user(
-                            req, _("Nenhum usuário atualizado."), level=messages.INFO
-                        )
-
-                # nome único e legível no admin
-                _apply_theme.__name__ = f"set_theme__{theme.slug}"
-                _apply_theme.short_description = _(
-                    f"Atribuir tema → {theme.name} ({theme.slug})"
-                )
-                return _apply_theme
-
-            act = make_action(t)
-            actions[act.__name__] = (act, act.__name__, act.short_description)
-
         return actions
 
 
 @admin.register(Loja)
 class LojaAdmin(admin.ModelAdmin):
-    list_display = ("nome", "dono", "tema", "data_criacao")
-    list_filter = ("tema", "data_criacao")
+    list_display = ("nome", "dono", "data_criacao")
+    list_filter = ("data_criacao",)
     search_fields = ("nome", "descricao", "dono__username", "dono__email")
     inlines = [LojaRoleInline, LojaFrontPermInline]
-    autocomplete_fields = ("dono", "tema")
+    autocomplete_fields = ("dono",)
     ordering = ("-id",)
     date_hierarchy = "data_criacao"
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.select_related("dono", "tema")
+        return qs.select_related("dono",)
