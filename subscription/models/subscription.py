@@ -1,14 +1,18 @@
-from datetime import timedelta, date
+from datetime import date, timedelta
+
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from custom_auth.models import User
+from custom_auth.models import Loja, User, Vendedor
 from subscription.models.bills import Bills
 
 
 class Subscription(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="subscriptions")
+    loja_responsavel = models.OneToOneField(
+        Loja, on_delete=models.PROTECT, related_name="subscriptions_loja", unique=True
+    )
+    user = models.ManyToManyField(Vendedor, related_name="subscriptions")
     is_active = models.BooleanField(default=False)
     created_at = models.DateField(auto_now_add=True)
     valido_ate = models.DateField(null=True, blank=True)
@@ -43,13 +47,15 @@ class Subscription(models.Model):
             self.save(update_fields=["valido_ate"])
 
     def __str__(self):
-        return f"Subscription({self.user.username}) - {'Ativa' if self.is_active else 'Inativa'}"
+        return f"Subscription({self.user}) - {'Ativa' if self.is_active else 'Inativa'}"
 
 
 # ===========================================
 # SIGNAL — cria fatura e ativa assinatura
 # ===========================================
-@receiver(post_save, sender=Subscription, dispatch_uid="reset_valid_date_and_create_bill")
+@receiver(
+    post_save, sender=Subscription, dispatch_uid="reset_valid_date_and_create_bill"
+)
 def reset_valid_date_and_create_bill(sender, instance, created, **kwargs):
     """
     Quando uma Subscription é criada:

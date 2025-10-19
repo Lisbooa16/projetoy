@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from django import forms
+from django.apps import apps
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils.translation import gettext_lazy as _
@@ -8,6 +9,7 @@ from django.utils.translation import gettext_lazy as _
 # Importa tudo do próprio app (evita caminho errado tipo custom_auth.models.user)
 from .models import (
     FrontPermission,
+    GroupObjectPermission,
     Loja,
     Role,
     User,
@@ -113,7 +115,7 @@ class OwnedLojaInline(admin.TabularInline):
     model = Loja
     fk_name = "dono"
     extra = 0
-    fields = ("nome","data_criacao")
+    fields = ("nome", "data_criacao")
     readonly_fields = ("data_criacao",)
     show_change_link = True
 
@@ -123,15 +125,35 @@ class OwnedLojaInline(admin.TabularInline):
 
 @admin.register(Vendedor)
 class VendedorAdmin(admin.ModelAdmin):
-    list_display = ("user", "nome_loja", "data_cadastro")
-    search_fields = (
-        "user__username",
-        "user__email",
-        "nome_loja__nome",  # campo correto no FK
-    )
-    autocomplete_fields = ("user", "nome_loja")
-    ordering = ("-id",)
+    list_display = ("nome", "email", "nome_loja", "user", "data_cadastro")
+    search_fields = ("nome", "email", "nome_loja__nome")
+    list_filter = ("nome_loja", "data_cadastro")
+    readonly_fields = ("user", "data_cadastro")
+    ordering = ("-data_cadastro",)
     date_hierarchy = "data_cadastro"
+    autocomplete_fields = ("nome_loja",)
+
+    fieldsets = (
+        (
+            "Informações do Vendedor",
+            {
+                "fields": ("nome", "email", "nome_loja", "descricao_loja"),
+            },
+        ),
+        (
+            "Sistema",
+            {
+                "fields": ("user", "data_cadastro"),
+            },
+        ),
+    )
+
+    def save_model(self, request, obj, form, change):
+        """
+        Apenas chama o save() normal — o próprio modelo
+        cuida da criação automática do User e envio do e-mail.
+        """
+        super().save_model(request, obj, form, change)
 
 
 # ---------- UserAdmin ----------
@@ -161,7 +183,12 @@ class UserAdmin(DjangoUserAdmin):
     inlines = [OwnedLojaInline, UserRoleInline, UserFrontPermissionInline]
 
     # M2M helpers
-    filter_horizontal = ("groups", "user_permissions", "lojas")
+    filter_horizontal = (
+        "groups",
+        "user_permissions",
+        "lojas",
+        "allowed_actions",
+    )
 
     # campos somente leitura
     readonly_fields = ("public_id", "last_login", "date_joined")
@@ -181,6 +208,7 @@ class UserAdmin(DjangoUserAdmin):
                     "is_superuser",
                     "groups",
                     "user_permissions",
+                    "allowed_actions",
                 )
             },
         ),
@@ -231,4 +259,106 @@ class LojaAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.select_related("dono",)
+        return qs.select_related(
+            "dono",
+        )
+
+
+# -------------------------------------------------
+# 🔹 Helper: retorna todos os models registrados
+# -------------------------------------------------
+def get_all_model_choices():
+    """Retorna todos os models registrados (app.model)."""
+    choices = []
+    for model in apps.get_models():
+        app_label = model._meta.app_label
+        model_name = model._meta.model_name
+        verbose = f"{app_label}.{model.__name__}"
+        key = f"{app_label}.{model_name}"
+        choices.append((key, verbose))
+    return sorted(choices, key=lambda x: x[1])
+
+
+# -------------------------------------------------
+# 🔹 Formulário customizado do admin
+# -------------------------------------------------
+class GroupObjectPermissionForm(forms.ModelForm):
+    model_names = forms.MultipleChoiceField(
+        label="Modelos",
+        choices=get_all_model_choices(),
+        widget=admin.widgets.FilteredSelectMultiple("modelos", is_stacked=False),
+    )
+
+    users = forms.ModelMultipleChoiceField(
+        queryset=None,
+        label="Usuários",
+        widget=admin.widgets.FilteredSelectMultiple("usuários", is_stacked=False),
+    )
+
+    class Meta:
+        model = GroupObjectPermission
+        fields = ["group", "users", "model_names", "action"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from django.contrib.auth import get_user_model
+
+        # 🔹 Atualiza dinamicamente o queryset de usuários
+        self.fields["users"].queryset = get_user_model().objects.all()
+
+        # 🔹 Preenche initial de model_names ao editar
+        if self.instance.pk:
+            self.fields["model_names"].initial = self.instance.model_names
+
+    def clean_model_names(self):
+        """Converte o campo MultipleChoiceField em lista JSON compatível."""
+        return list(self.cleaned_data["model_names"])
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.model_names = list(self.cleaned_data["model_names"])
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
+
+
+# -------------------------------------------------
+# 🔹 Admin personalizado
+# -------------------------------------------------
+@admin.register(GroupObjectPermission)
+class GroupObjectPermissionAdmin(admin.ModelAdmin):
+    form = GroupObjectPermissionForm
+    list_display = ("group", "action", "display_models", "user_count")
+    list_filter = ("group", "action")
+    search_fields = ("group__name",)
+    autocomplete_fields = ("group",)
+
+    def display_models(self, obj):
+        return ", ".join(obj.model_names or [])
+
+    display_models.short_description = "Modelos"
+
+    def user_count(self, obj):
+        return obj.users.count()
+
+    user_count.short_description = "Usuários"
+
+    # 🔒 Apenas superusuários podem manipular essas permissões
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def get_model_perms(self, request):
+        """Oculta o modelo no menu do admin para não-superusers."""
+        if not request.user.is_superuser:
+            return {}
+        return super().get_model_perms(request)

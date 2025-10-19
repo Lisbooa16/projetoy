@@ -41,13 +41,15 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "custom_auth",
-    "subscription"
+    "subscription",
+    "sales",
+    "mail",
 ]
 
 AUTH_USER_MODEL = "custom_auth.User"
 
 LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "dashboard"  # ajuste pro seu fluxo
+LOGIN_REDIRECT_URL = "mailbox:inbox"  # ajuste pro seu fluxo
 LOGOUT_REDIRECT_URL = "login"
 
 

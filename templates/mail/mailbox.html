@@ -1,0 +1,225 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}Mensagens{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    :root {
+      --bg: #f9fafb;
+      --bg-content: #ffffff;
+      --text: #111827;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --radius: 10px;
+    }
+
+    [data-theme="dark"] {
+      --bg: #111827;
+      --bg-content: #1f2937;
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+      --border: #374151;
+      --primary: #3b82f6;
+      --primary-hover: #60a5fa;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, 'Helvetica Neue', Arial;
+      background: var(--bg);
+      color: var(--text);
+      transition: background 0.3s, color 0.3s;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-content);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    button, .btn {
+      border: none;
+      background: var(--primary);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 8px 14px;
+      cursor: pointer;
+      font-size: 14px;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .btn:hover, button:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      flex-grow: 1;
+      min-height: calc(100vh - 60px);
+    }
+
+    .sidebar {
+      background: var(--bg-content);
+      border-right: 1px solid var(--border);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .sidebar h3 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .sidebar a {
+      display: block;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      text-decoration: none;
+      color: var(--text);
+      transition: all 0.2s;
+    }
+
+    .sidebar a:hover {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .content {
+      padding: 24px;
+      background: var(--bg);
+      overflow-y: auto;
+    }
+
+    /* Chat / Mensagens */
+    .msg {
+      padding: 10px 14px;
+      margin: 8px 0;
+      border-radius: var(--radius);
+      max-width: 80%;
+      word-wrap: break-word;
+      line-height: 1.4;
+      border: 1px solid var(--border);
+    }
+
+    .msg.me {
+      margin-left: auto;
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .msg.them {
+      background: var(--bg-content);
+      color: var(--text);
+    }
+
+    .thread-header {
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .thread-header h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .thread-meta {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    /* Responsivo */
+    @media (max-width: 768px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      header {
+        flex-direction: column;
+        gap: 8px;
+      }
+    }
+  </style>
+</head>
+
+<body data-theme="light">
+  <header>
+    <h1>💬 Mensagens</h1>
+    <div class="actions">
+      <button onclick="toggleTheme()">🌓 Tema</button>
+      <a class="btn" href="{% url 'mailbox:compose' %}">✉️ Nova</a>
+      <a class="btn" href="{% url 'mailbox:inbox' %}">📥 Inbox</a>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <h3>Navegação</h3>
+      <a href="{% url 'mailbox:inbox' %}">📨 Caixa de entrada</a>
+      <a href="{% url 'mailbox:compose' %}">📝 Nova mensagem</a>
+    </aside>
+
+    <main class="content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      const body = document.body;
+      const current = body.getAttribute("data-theme");
+      const next = current === "dark" ? "light" : "dark";
+      body.setAttribute("data-theme", next);
+      localStorage.setItem("theme", next);
+    }
+
+    (function restoreTheme() {
+      const saved = localStorage.getItem("theme");
+      if (saved) document.body.setAttribute("data-theme", saved);
+    })();
+  </script>
+</body>
+</html>

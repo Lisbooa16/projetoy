@@ -2,12 +2,14 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.core.mail import send_mail
+from django.contrib.auth.views import LoginView
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework import decorators, mixins, permissions, response, status, viewsets
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
+
+from mail.utils import notificar_usuario, send_internal_message
 
 from .permissions import IsReadOnlyOrAdmin, IsSelfOrAdmin
 from .serializers import (
@@ -104,8 +106,10 @@ class PasswordResetRequestView(APIView):
 
         subject = "Redefinição de senha"
         message = f"Olá,\n\nPara redefinir sua senha, acesse: {link}\n\nSe você não solicitou, ignore este e-mail."
-        send_mail(
-            subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False
+        notificar_usuario(
+            email=email,
+            subject=subject,
+            message=message,
         )
 
         return response.Response(
@@ -142,3 +146,7 @@ class PasswordResetConfirmView(APIView):
         return response.Response(
             {"detail": "Senha redefinida com sucesso."}, status=status.HTTP_200_OK
         )
+
+
+class CustomLoginView(LoginView):
+    template_name = "login.html"

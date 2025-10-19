@@ -1,16 +1,21 @@
-from django.contrib import admin
-from django.utils.html import format_html
 from datetime import date, timedelta
 
-from .models import Subscription
+from django.contrib import admin
+from django.utils.html import format_html
+
+from custom_auth.models import Vendedor
 from subscription.models.bills import Bills
+
+from .forms import SubscriptionForm
+from .models import Subscription
 
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
+    form = SubscriptionForm
     list_display = (
         "id",
-        "user",
+        "get_users",
         "is_active",
         "valido_ate",
         "pay",
@@ -19,17 +24,21 @@ class SubscriptionAdmin(admin.ModelAdmin):
         "created_at",
     )
     list_filter = ("is_active", "pay", "recurrence", "created_at")
-    search_fields = ("user__username", "user__email")
+    search_fields = ("user__user__username", "user__user__email")
     readonly_fields = ("created_at",)
     ordering = ("-created_at",)
+    filter_horizontal = ("user",)
     actions = ["ativar_assinaturas", "desativar_assinaturas", "renovar_assinaturas"]
 
+    def get_users(self, obj):
+        return ", ".join([v.user.username for v in obj.user.all()])
+
+    get_users.short_description = "Usuários"
+
     def status_color(self, obj):
-        """Mostra uma bolinha verde/vermelha conforme status."""
         color = "#4CAF50" if obj.is_active else "#F44336"
         label = "Ativa" if obj.is_active else "Inativa"
         return format_html(f'<b style="color:{color}">●</b> {label}')
-    status_color.short_description = "Status"
 
     # ===============================
     # AÇÕES PERSONALIZADAS
@@ -58,4 +67,9 @@ class SubscriptionAdmin(admin.ModelAdmin):
                 created_at=date.today(),
             )
             renovadas += 1
-        self.message_user(request, f"{renovadas} assinatura(s) renovada(s) com sucesso.")
+        self.message_user(
+            request, f"{renovadas} assinatura(s) renovada(s) com sucesso."
+        )
+
+    class Media:
+        js = ("admin/js/subscription_filter.js",)

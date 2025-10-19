@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+
 class Bills(models.Model):
     class Status(models.TextChoices):
         PENDING = "1", _("Pending")
@@ -9,7 +10,9 @@ class Bills(models.Model):
 
     sub = models.ForeignKey("Subscription", on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=4, choices=Status.choices, default=Status.PENDING)
+    status = models.CharField(
+        max_length=4, choices=Status.choices, default=Status.PENDING
+    )
 
     class Meta:
         verbose_name = "Bill"

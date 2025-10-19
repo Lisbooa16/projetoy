@@ -13,11 +13,26 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf.urls import handler403
 from django.contrib import admin
+from django.shortcuts import render
 from django.urls import include, path
+
+
+def custom_permission_denied_view(request, exception=None):
+    """
+    Retorna uma página 403 estilizada dentro do tema do admin.
+    """
+    return render(request, "admin/403.html", status=403)
+
+
+handler403 = custom_permission_denied_view
+
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("django.contrib.auth.urls")),
     path("api/", include("custom_auth.urls")),
+    path("api/", include("subscription.urls")),
+    path("messages/", include("mail.urls", namespace="mailbox")),
 ]

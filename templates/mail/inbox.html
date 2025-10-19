@@ -1,0 +1,170 @@
+{% extends "mail/base.html" %}
+{% load mailbox_tags %}
+{% block title %}Caixa de Entrada{% endblock %}
+
+{% block content %}
+  <div class="inbox-wrapper">
+    <h2>📥 Caixa de entrada</h2>
+
+    {% if threads %}
+      <div class="threads-list">
+        {% for t in threads %}
+          {% with last=t.last_message %}
+            <a href="{% url 'mailbox:thread_detail' t.id %}" class="thread-card">
+              <div class="thread-header">
+                <div class="thread-title">
+                  <strong>{{ t.subject }}</strong>
+                  {% unread_count as unread %}
+                  {% if unread %}
+                    <span class="badge">{{ unread }} não lida(s)</span>
+                  {% endif %}
+                </div>
+                {% if last %}
+                  <span class="thread-date">
+                    {{ last.sent_at|date:"d/m/Y H:i" }}
+                  </span>
+                {% endif %}
+              </div>
+
+              <div class="thread-meta">
+                <span class="participants">
+                  👥 {{ t.participants.all|join:", " }}
+                </span>
+              </div>
+
+              {% if last %}
+                <p class="thread-preview">
+                  <strong>{{ last.sender }}:</strong>
+                  {{ last.body|truncatechars:100 }}
+                </p>
+              {% endif %}
+            </a>
+          {% endwith %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-inbox">
+        <p>📭 Nenhuma conversa encontrada.</p>
+        <a href="{% url 'mailbox:compose' %}" class="btn-primary">✉️ Enviar nova mensagem</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <style>
+    .inbox-wrapper {
+      max-width: 900px;
+      margin: 0 auto;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .inbox-wrapper h2 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+
+    .threads-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .thread-card {
+      display: block;
+      background: var(--bg-content);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+    }
+
+    .thread-card:hover {
+      background: var(--primary-hover);
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    }
+
+    .thread-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .thread-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+    }
+
+    .thread-date {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .participants {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .thread-preview {
+      margin: 6px 0 0;
+      font-size: 15px;
+      color: var(--text);
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .badge {
+      background: var(--primary);
+      color: #fff;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .empty-inbox {
+      text-align: center;
+      margin-top: 60px;
+    }
+
+    .empty-inbox p {
+      font-size: 18px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: var(--radius);
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      .thread-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+    }
+  </style>
+{% endblock %}

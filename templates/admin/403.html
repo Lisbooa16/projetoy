@@ -1,0 +1,29 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}Acesso Negado | {{ site_title|default:_('Administração') }}{% endblock %}
+
+{% block content %}
+<style>
+html, body {
+  background-color: var(--body-bg, #f8f9fa);
+  color: var(--body-fg, #212529);
+}
+a.button {
+  background: var(--header-bg, #0b5ed7);
+}
+a.button:hover {
+  opacity: .9;
+}
+</style>
+<div class="content" style="max-width:600px;margin:60px auto;text-align:center;">
+  <h1 style="color:#d9534f;font-size:48px;">🚫 Acesso negado</h1>
+  <p style="font-size:18px;margin-top:15px;">
+    Você não tem permissão para acessar esta página.<br>
+    Caso precise de acesso, entre em contato com o administrador.
+  </p>
+  <a href="{% url 'admin:index' %}" class="button" style="display:inline-block;margin-top:25px;padding:10px 20px;background:#0b5ed7;color:white;border-radius:6px;text-decoration:none;">
+    ← Voltar ao painel
+  </a>
+</div>
+{% endblock %}

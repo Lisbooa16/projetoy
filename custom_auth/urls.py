@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .views import (
+    CustomLoginView,
     GroupViewSet,
     PasswordResetConfirmView,
     PasswordResetRequestView,
@@ -28,4 +29,5 @@ urlpatterns = [
         name="password_reset_confirm",
     ),
     path("permissions/", include("rest_framework.urls", namespace="rest_framework")),
+    path("accounts/login/", CustomLoginView.as_view(), name="login"),
 ]

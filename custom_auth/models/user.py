@@ -10,7 +10,27 @@ from django.db import models
 from django.db.models import Q, UniqueConstraint
 from django.db.models.signals import m2m_changed, post_delete, post_save
 from django.dispatch import receiver
+from django.utils.crypto import get_random_string
+from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
+
+from mail.utils import notificar_usuario
+
+
+class ActionPermission(models.Model):
+    name = models.CharField(max_length=100)
+    model_name = models.CharField(max_length=100)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["model_name", "name"], name="unique_model_action"
+            )
+        ]
+
+    def __str__(self):
+        return self.name
+
 
 class User(AbstractUser):
     """
@@ -29,6 +49,9 @@ class User(AbstractUser):
 
     is_email_verified = models.BooleanField(default=False)
     lojas = models.ManyToManyField("Loja", related_name="usuarios", blank=True)
+    allowed_actions = models.ManyToManyField(
+        ActionPermission, blank=True, related_name="users"
+    )
 
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = ["email"]
@@ -39,7 +62,6 @@ class User(AbstractUser):
 
     def __str__(self) -> str:
         return self.display_name or self.get_full_name() or self.username
-
 
     @lru_cache(maxsize=512)
     def _collect_front_codenames(self, loja: "Loja | int | None" = None) -> set[str]:
@@ -114,13 +136,21 @@ class Loja(models.Model):
 
 class Vendedor(models.Model):
     """
-    Perfil de vendedor acoplado a um User.
+    Perfil de vendedor com criação automática de usuário.
     """
 
     id = models.BigAutoField(primary_key=True)
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="vendedor")
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="vendedor",
+        null=True,
+        blank=True,
+    )
+    nome = models.CharField(max_length=150)
+    email = models.EmailField(unique=True)
     nome_loja = models.ForeignKey(
-        Loja, on_delete=models.CASCADE, related_name="vendedores"
+        "Loja", on_delete=models.CASCADE, related_name="vendedores"
     )
     descricao_loja = models.TextField(blank=True, null=True)
     data_cadastro = models.DateTimeField(auto_now_add=True)
@@ -129,16 +159,53 @@ class Vendedor(models.Model):
         verbose_name = "Vendedor"
         verbose_name_plural = "Vendedores"
 
-    def __str__(self) -> str:
-        return (
-            self.nome_loja.nome
-            if self.nome_loja_id
-            else (self.user.username or str(self.pk))
-        )
+    def __str__(self):
+        return f"{self.nome} ({self.nome_loja.nome})"
 
-    @property
-    def loja(self) -> Loja:
-        return self.nome_loja
+    def save(self, *args, **kwargs):
+        """
+        Se ainda não existir um User vinculado, cria automaticamente.
+        """
+        creating = self.pk is None or self.user_id is None
+
+        super().save(*args, **kwargs)
+
+        if creating:
+            password = get_random_string(10)
+
+            # Cria um username único por loja
+            loja_slug = slugify(self.nome_loja.nome)[:10]  # exemplo: "loja-super"
+            base_username = slugify(self.email.split("@")[0])
+            unique_username = f"{base_username}_{loja_slug}"
+
+            counter = 1
+            while User.objects.filter(username=unique_username).exists():
+                unique_username = f"{base_username}_{loja_slug}_{counter}"
+                counter += 1
+
+            user = User.objects.create_user(
+                username=unique_username,
+                email=self.email,
+                password=password,
+                first_name=self.nome,
+            )
+
+            self.user = user
+            super().save(update_fields=["user"])
+
+            # Envia e-mail de boas-vindas
+            message = (
+                f"Olá {self.nome},\n\n"
+                f"Seu acesso foi criado.\n"
+                f"Usuário: {user.username}\n"
+                f"Senha temporária: {password}\n\n"
+                f"Por favor, altere sua senha no primeiro login."
+            )
+            notificar_usuario(
+                destinatarios=self.email,
+                subject="Bem-vindo à plataforma!",
+                message=message,
+            )
 
 
 # -------------------- PERMISSÕES DO FRONT --------------------
